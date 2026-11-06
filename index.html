@@ -93,8 +93,9 @@
   /* Rechtsonder: sessie */
   .stats { position: fixed; right: 40px; bottom: 34px; text-align: right; z-index: 5; font-size: 14px; color: var(--muted); }
   .stats b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
-  .donate { position: fixed; right: 40px; bottom: 12px; z-index: 5; font-size: 13px; color: var(--muted);
+  .donate { position: fixed; left: 34px; top: calc(max(22px, env(safe-area-inset-top)) + 46px); z-index: 6; font-size: 13px; color: var(--muted);
     text-decoration: none; padding: 2px 0; border-bottom: 1px solid transparent; transition: color .3s, border-color .3s, opacity .8s; }
+  body.idle .donate { opacity: .55; }
   .donate:hover, .donate:focus-visible { color: var(--accent); border-bottom-color: var(--accent); outline: none; }
 
   /* Bediening: pauze, opnieuw, rondes */
@@ -147,7 +148,7 @@
     .rhythm { margin-bottom: 8px; }
     .stats { top: calc(max(14px, env(safe-area-inset-top)) + 52px); bottom: auto; right: 16px; font-size: 12.5px; }
     .controls { bottom: 40px; }
-    .donate { top: calc(max(14px, env(safe-area-inset-top)) + 76px); bottom: auto; right: 16px; font-size: 12px; }
+    .donate { top: calc(max(14px, env(safe-area-inset-top)) + 38px); left: 16px; font-size: 12px; }
   }
   @media (max-width: 480px) {
     .brand b { display: none; }
@@ -214,7 +215,7 @@
   <div class="note" id="note"></div>
 </section>
 
-<a class="donate fade" id="donate" href="https://urbantechmonk.gumroad.com/coffee" target="_blank" rel="noopener">☕ Trakteer me op een koffie</a>
+<a class="donate" id="donate" href="https://urbantechmonk.gumroad.com/coffee" target="_blank" rel="noopener">☕ Trakteer me op een koffie</a>
 <div class="stats"><span id="sessLbl">Sessie</span> <b id="sess">00:00</b> · <b id="cycles">0</b> <span id="cycLbl">ademcycli</span></div>
 
 <div class="controls fade" id="controls">
