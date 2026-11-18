@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#08121a">
+<meta name="description" content="A calm breathing companion with a little rhino. 11 exercises, 4 colour themes, works offline. · Rustige ademhalingsapp met een neushoorn.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Breathwork">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <title>Breathwork with Rhino</title>
 <style>
   :root {
@@ -38,6 +45,7 @@
   .iconbtn { background: var(--panel); border: 1px solid var(--line); color: var(--text); border-radius: 10px;
     padding: 8px 14px; font: inherit; font-size: 14px; cursor: pointer; backdrop-filter: blur(6px); white-space: nowrap; }
   .iconbtn:hover { border-color: var(--accent); }
+  .iconbtn[hidden] { display: none; }
   .lang { display: flex; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 3px;
     backdrop-filter: blur(6px); }
   .lang button { background: none; border: 0; color: var(--muted); font: 600 13px 'Segoe UI', sans-serif;
@@ -122,6 +130,7 @@
   body.is-fs .keys { display: none; }
 
   /* Middelgrote schermen: sneltoetsen weg, minder ruimte */
+  @media (max-width: 1360px) { .keys { display: none; } }
   @media (max-width: 1100px) {
     .keys { display: none; }
     .info { max-width: 380px; }
@@ -188,6 +197,7 @@
     <div class="lang" role="group" aria-label="Taal / Language">
       <button data-lang="nl">NL</button><button data-lang="en">EN</button>
     </div>
+    <button class="iconbtn" id="installBtn" hidden><span aria-hidden="true">⤓</span> <span class="fsLabel" id="installLabel">Installeer app</span></button>
     <button class="iconbtn" id="fsBtn"><span aria-hidden="true">⛶</span> <span class="fsLabel" id="fsLabel">Volledig scherm</span></button>
   </div>
 </div>
@@ -372,12 +382,12 @@ const UI = {
   nl: { tagline: 'Adem · Rust · Focus', paused: 'Gepauzeerd', session: 'Sessie', cycles: 'ademcycli',
         fs: 'Volledig scherm', win: 'Venster', prev: 'Vorige oefening', next: 'Volgende oefening',
         pause: 'Pauze', play: 'Verder', again: 'Opnieuw', reset: 'Opnieuw beginnen', rounds: 'Rondes',
-        less: 'Minder rondes', more: 'Meer rondes', done: 'Klaar', theme: 'Kleurthema', classic: 'Klassiek', donate: '☕ Trakteer me op een koffie',
+        less: 'Minder rondes', more: 'Meer rondes', done: 'Klaar', theme: 'Kleurthema', classic: 'Klassiek', donate: '☕ Trakteer me op een koffie', install: 'Installeer app',
         keys: '<kbd>&lt;</kbd><kbd>&gt;</kbd> wisselen · <kbd>spatie</kbd> pauze · <kbd>R</kbd> opnieuw · <kbd>T</kbd> thema · <kbd>F</kbd> scherm · <kbd>L</kbd> taal' },
   en: { tagline: 'Breathe · Rest · Focus', paused: 'Paused', session: 'Session', cycles: 'breath cycles',
         fs: 'Full screen', win: 'Window', prev: 'Previous exercise', next: 'Next exercise',
         pause: 'Pause', play: 'Resume', again: 'Again', reset: 'Start over', rounds: 'Rounds',
-        less: 'Fewer rounds', more: 'More rounds', done: 'Done', theme: 'Colour theme', classic: 'Classic', donate: '☕ Buy me a coffee',
+        less: 'Fewer rounds', more: 'More rounds', done: 'Done', theme: 'Colour theme', classic: 'Classic', donate: '☕ Buy me a coffee', install: 'Install app',
         keys: '<kbd>&lt;</kbd><kbd>&gt;</kbd> switch · <kbd>space</kbd> pause · <kbd>R</kbd> restart · <kbd>T</kbd> theme · <kbd>F</kbd> screen · <kbd>L</kbd> language' },
 };
 
@@ -447,7 +457,9 @@ function stateAt(tl, t, rounds) {
 const LANG_STORE = 'rhino-breath-lang', STORE = 'rhino-breath-idx';
 const THEME_STORE = 'rhino-breath-theme', ROUNDS_STORE = 'rhino-breath-rounds';
 const ROUND_STEPS = [0, 3, 4, 5, 6, 8, 10, 12, 15, 20, 30, 50];
-let lang = store.get(LANG_STORE) === 'en' ? 'en' : 'nl';
+const savedLang = store.get(LANG_STORE);
+let lang = savedLang === 'en' || savedLang === 'nl' ? savedLang
+  : (/^nl\b/i.test(navigator.language || '') ? 'nl' : 'en'); // eerste bezoek: taal van de browser
 let themeId = THEMES.some(t => t.id === store.get(THEME_STORE)) ? store.get(THEME_STORE) : 'classic';
 let rounds = ROUND_STEPS.includes(parseInt(store.get(ROUNDS_STORE), 10)) ? parseInt(store.get(ROUNDS_STORE), 10) : 0;
 let idx = Math.min(EXERCISES.length - 1, Math.max(0, parseInt(store.get(STORE), 10) || 0));
@@ -563,6 +575,7 @@ function setPaused(p) {
   paused = p;
   document.body.classList.toggle('is-paused', paused && !finished);
   updateControls();
+  syncWakeLock();
 }
 function togglePause() {
   if (finished) { restart(); return; }
@@ -629,6 +642,7 @@ function applyLang() {
   $('cycLbl').textContent = t.cycles;
   $('roundsLbl').textContent = t.rounds;
   $('donate').textContent = t.donate;
+  $('installLabel').textContent = t.install; $('installBtn').setAttribute('aria-label', t.install);
   $('resetBtn').setAttribute('aria-label', t.reset); $('resetBtn').title = t.reset;
   $('roundsMinus').setAttribute('aria-label', t.less);
   $('roundsPlus').setAttribute('aria-label', t.more);
@@ -842,8 +856,48 @@ function loop(now) {
 }
 function startLoop() { if (!rafId) rafId = requestAnimationFrame(loop); }
 
+// ---- Scherm aan houden zolang je ademt (alleen tijdens een lopende oefening) ----
+let wakeLock = null, wakeBusy = false;
+function wantAwake() { return !paused && !finished && document.visibilityState === 'visible'; }
+async function syncWakeLock() {
+  if (!('wakeLock' in navigator) || wakeBusy) return;
+  wakeBusy = true;
+  try {
+    if (wantAwake() && !wakeLock) {
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => { wakeLock = null; });
+    } else if (!wantAwake() && wakeLock) {
+      const l = wakeLock; wakeLock = null; await l.release();
+    }
+  } catch { wakeLock = null; } // bijv. batterijbesparing: dan gewoon zonder
+  finally { wakeBusy = false; }
+}
+document.addEventListener('visibilitychange', syncWakeLock);
+setInterval(syncWakeLock, 1000); // vangt ook 'klaar' op en een slot dat het systeem zelf vrijgaf
+
+// ---- Installeren als app (alleen online, niet als los bestand) ----
+const online = location.protocol === 'https:' || location.protocol === 'http:';
+const standalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+let installEvt = null;
+if (online) {
+  const m = document.createElement('link'); m.rel = 'manifest'; m.href = 'manifest.webmanifest';
+  document.head.appendChild(m);
+  if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  addEventListener('beforeinstallprompt', e => {
+    e.preventDefault(); installEvt = e;
+    if (!standalone()) $('installBtn').hidden = false;
+  });
+  addEventListener('appinstalled', () => { installEvt = null; $('installBtn').hidden = true; });
+}
+$('installBtn').addEventListener('click', async () => {
+  if (!installEvt) return;
+  installEvt.prompt();
+  try { await installEvt.userChoice; } catch {}
+  installEvt = null; $('installBtn').hidden = true;
+});
+
 // Alleen-lezen inkijk voor tests
-window.__rhino = { state: () => ({ ...snapshot }), timelines: () => TIMELINES.map(t => ({ total: t.total, kinds: t.phases.map(p => p.kind) })) };
+window.__rhino = { state: () => ({ ...snapshot, wake: !!wakeLock }), timelines: () => TIMELINES.map(t => ({ total: t.total, kinds: t.phases.map(p => p.kind) })) };
 
 applyLang();
 updateControls();
